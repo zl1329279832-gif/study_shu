@@ -16,8 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -38,14 +36,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Autowired
     private UserMapper userMapper;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
     @Override
     public LoginVO login(LoginDTO loginDTO) {
         log.info("用户登录: {}", loginDTO.getUsername());
         
-        Authentication authentication = authenticationManager.authenticate(
+        authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginDTO.getUsername(),
                         loginDTO.getPassword()

@@ -21,12 +21,12 @@ mybatis-plus:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
 
 jwt:
-  id-type: auto
-  logic-delete-field: deleted
-  logic-delete-value: 1
-  logic-not-delete-value: 0
   secret: library-management-secret-key-2023-abcdefghijklmnopqrstuvwxyz
   expiration: 86400000
   header: Authorization
