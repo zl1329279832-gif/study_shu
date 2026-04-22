@@ -20,6 +20,12 @@ const routes = [
         name: 'Welcome',
         component: () => import('@/views/welcome/index.vue'),
         meta: { title: '首页', icon: 'HomeFilled' }
+      },
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: () => import('@/views/profile/index.vue'),
+        meta: { title: '个人中心', icon: 'User' }
       }
     ]
   }
@@ -74,28 +80,29 @@ router.beforeEach(async (to, from, next) => {
 function generateDynamicRoutes(menus) {
   const routes = []
   
-  menus.forEach(menu => {
-    if (menu.menuType === 1 && menu.path && menu.component) {
-      const route = {
-        path: menu.path.replace(/^\/[^\/]+/, ''),
-        name: menu.path.replace(/\//g, '-').substring(1),
-        component: () => import(`@/views${menu.component}.vue`),
-        meta: {
-          title: menu.menuName,
-          icon: menu.icon
+  const flattenMenus = (menuList) => {
+    menuList.forEach(menu => {
+      if (menu.menuType === 1 && menu.path && menu.component) {
+        const routePath = menu.path.substring(1)
+        const route = {
+          path: routePath,
+          name: menu.path.replace(/\//g, '-').substring(1),
+          component: () => import(`@/views${menu.component}.vue`),
+          meta: {
+            title: menu.menuName,
+            icon: menu.icon
+          }
         }
+        routes.push(route)
       }
       
       if (menu.children && menu.children.length > 0) {
-        const childRoutes = generateDynamicRoutes(menu.children)
-        if (childRoutes.length > 0) {
-          route.children = childRoutes
-        }
+        flattenMenus(menu.children)
       }
-      
-      routes.push(route)
-    }
-  })
+    })
+  }
+  
+  flattenMenus(menus)
   
   return routes
 }

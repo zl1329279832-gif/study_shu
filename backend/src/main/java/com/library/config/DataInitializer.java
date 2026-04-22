@@ -181,22 +181,31 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initUsers() {
+        String rawPassword = "123456";
+        String encodedPassword = passwordEncoder.encode(rawPassword);
+        log.info("密码加密完成，明文: {}, 密文: {}", rawPassword, encodedPassword);
+
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.in(User::getUsername, "admin", "manager", "user");
         Long count = userMapper.selectCount(queryWrapper);
         
         if (count >= 3) {
-            log.info("用户数据已存在，跳过初始化");
+            log.info("用户数据已存在，重置所有测试用户的密码...");
+            
+            List<User> existingUsers = userMapper.selectList(queryWrapper);
+            for (User u : existingUsers) {
+                u.setPassword(encodedPassword);
+                userMapper.updateById(u);
+                log.info("已重置用户 [{}] 的密码", u.getUsername());
+            }
             return;
         }
 
         log.info("初始化用户数据...");
-        String password = passwordEncoder.encode("123456");
-        log.info("密码加密完成，明文: 123456");
 
         User admin = new User();
         admin.setUsername("admin");
-        admin.setPassword(password);
+        admin.setPassword(encodedPassword);
         admin.setRealName("超级管理员");
         admin.setPhone("13800138000");
         admin.setEmail("admin@library.com");
@@ -205,7 +214,7 @@ public class DataInitializer implements CommandLineRunner {
 
         User manager = new User();
         manager.setUsername("manager");
-        manager.setPassword(password);
+        manager.setPassword(encodedPassword);
         manager.setRealName("管理员");
         manager.setPhone("13800138001");
         manager.setEmail("manager@library.com");
@@ -214,7 +223,7 @@ public class DataInitializer implements CommandLineRunner {
 
         User user = new User();
         user.setUsername("user");
-        user.setPassword(password);
+        user.setPassword(encodedPassword);
         user.setRealName("普通用户");
         user.setPhone("13800138002");
         user.setEmail("user@library.com");

@@ -125,7 +125,9 @@ const handleCollapse = () => {
 }
 
 const handleCommand = async (command) => {
-  if (command === 'logout') {
+  if (command === 'userinfo') {
+    router.push('/profile')
+  } else if (command === 'logout') {
     await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',

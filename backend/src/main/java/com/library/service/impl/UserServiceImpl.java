@@ -4,6 +4,8 @@ import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.library.dto.LoginDTO;
+import com.library.dto.PasswordUpdateDTO;
+import com.library.dto.UserUpdateDTO;
 import com.library.entity.Menu;
 import com.library.entity.Role;
 import com.library.entity.User;
@@ -16,7 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +39,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public LoginVO login(LoginDTO loginDTO) {
@@ -70,6 +77,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         loginVO.setUserId(user.getId());
         loginVO.setUsername(user.getUsername());
         loginVO.setRealName(user.getRealName());
+        loginVO.setPhone(user.getPhone());
+        loginVO.setEmail(user.getEmail());
         loginVO.setToken(token);
 
         List<Role> roles = userMapper.selectRolesByUserId(user.getId());
@@ -108,6 +117,51 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return menuVOList.stream()
                 .filter(menu -> menu.getParentId() == 0)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void updateUserInfo(String username, UserUpdateDTO dto) {
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getUsername, username);
+        User user = userMapper.selectOne(queryWrapper);
+        
+        if (user == null) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+        
+        user.setRealName(dto.getRealName());
+        user.setPhone(dto.getPhone());
+        user.setEmail(dto.getEmail());
+        
+        userMapper.updateById(user);
+        log.info("用户 [{}] 更新了个人信息", username);
+    }
+
+    @Override
+    public void updatePassword(String username, PasswordUpdateDTO dto) {
+        if (!StringUtils.hasText(dto.getNewPassword()) || dto.getNewPassword().length() < 6) {
+            throw new IllegalArgumentException("新密码长度不能少于6位");
+        }
+        
+        if (!dto.getNewPassword().equals(dto.getConfirmPassword())) {
+            throw new IllegalArgumentException("两次输入的密码不一致");
+        }
+        
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getUsername, username);
+        User user = userMapper.selectOne(queryWrapper);
+        
+        if (user == null) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+        
+        if (!passwordEncoder.matches(dto.getOldPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("原密码不正确");
+        }
+        
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        userMapper.updateById(user);
+        log.info("用户 [{}] 修改了密码", username);
     }
 
 }

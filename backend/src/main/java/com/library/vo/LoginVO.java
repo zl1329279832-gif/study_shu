@@ -15,6 +15,10 @@ public class LoginVO {
 
     private String realName;
 
+    private String phone;
+
+    private String email;
+
     private List<String> roles;
 
     private List<MenuVO> menus;

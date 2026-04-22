@@ -15,6 +15,22 @@ export function getUserInfo() {
   })
 }
 
+export function updateUserInfo(data) {
+  return request({
+    url: '/auth/userinfo',
+    method: 'put',
+    data
+  })
+}
+
+export function updatePassword(data) {
+  return request({
+    url: '/auth/password',
+    method: 'put',
+    data
+  })
+}
+
 export function logout() {
   return request({
     url: '/auth/logout',
