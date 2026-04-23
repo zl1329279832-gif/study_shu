@@ -29,8 +29,16 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements Me
             menu.setChildren(parentMap.getOrDefault(menu.getId(), new ArrayList<>()));
         });
 
-        return menus.stream()
-                .filter(menu -> menu.getParentId() == 0)
-                .collect(Collectors.toList());
+        List<Menu> result = new ArrayList<>();
+        buildMenuTree(menus, result, 0L);
+        return result;
+    }
+
+    private void buildMenuTree(List<Menu> allMenus, List<Menu> result, Long parentId) {
+        for (Menu menu : allMenus) {
+            if (menu.getParentId().equals(parentId)) {
+                result.add(menu);
+            }
+        }
     }
 }

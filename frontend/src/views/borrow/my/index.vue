@@ -31,11 +31,19 @@
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="bookName" label="图书名称" />
       <el-table-column prop="author" label="作者" />
-      <el-table-column prop="borrowTime" label="借阅时间" width="180" />
-      <el-table-column prop="expectReturnTime" label="预计归还时间" width="180" />
+      <el-table-column prop="borrowTime" label="借阅时间" width="180">
+        <template #default="{ row }">
+          {{ formatDateTime(row.borrowTime) }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="expectReturnTime" label="预计归还时间" width="180">
+        <template #default="{ row }">
+          {{ formatDateTime(row.expectReturnTime) }}
+        </template>
+      </el-table-column>
       <el-table-column prop="actualReturnTime" label="实际归还时间" width="180">
         <template #default="{ row }">
-          {{ row.actualReturnTime || '-' }}
+          {{ formatDateTime(row.actualReturnTime) || '-' }}
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" width="100">
@@ -76,6 +84,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Search, Refresh } from '@element-plus/icons-vue'
 import { getMyRecords, returnBook } from '@/api/borrow'
+import { formatDateTime } from '@/utils/date'
 
 const searchForm = reactive({
   bookName: '',

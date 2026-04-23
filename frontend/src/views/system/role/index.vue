@@ -34,29 +34,146 @@
         </template>
       </el-table-column>
     </el-table>
+    
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogTitle"
+      width="600px"
+    >
+      <el-form ref="formRef" :model="formData" :rules="formRules" label-width="100px">
+        <el-form-item label="角色名称" prop="roleName">
+          <el-input v-model="formData.roleName" placeholder="请输入角色名称" />
+        </el-form-item>
+        <el-form-item label="角色编码" prop="roleCode">
+          <el-input v-model="formData.roleCode" placeholder="请输入角色编码" />
+        </el-form-item>
+        <el-form-item label="角色描述" prop="description">
+          <el-input v-model="formData.description" type="textarea" :rows="3" placeholder="请输入角色描述" />
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-radio-group v-model="formData.status">
+            <el-radio :label="1">启用</el-radio>
+            <el-radio :label="0">禁用</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog
+      v-model="permissionDialogVisible"
+      title="权限配置"
+      width="600px"
+    >
+      <el-tree
+        ref="menuTreeRef"
+        :data="menuTreeList"
+        :props="{ label: 'menuName', children: 'children' }"
+        show-checkbox
+        node-key="id"
+        default-expand-all
+        :default-checked-keys="checkedMenuIds"
+      />
+      <template #footer>
+        <el-button @click="permissionDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSavePermission">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
+import {
+  getRoleList,
+  addRole,
+  updateRole,
+  deleteRole,
+  getMenuTree,
+  getRoleMenus,
+  assignRoleMenus
+} from '@/api/system'
 
-const roleList = ref([
-  { id: 1, roleName: '超级管理员', roleCode: 'ADMIN', description: '系统超级管理员，拥有所有权限', status: 1 },
-  { id: 2, roleName: '管理员', roleCode: 'MANAGER', description: '普通管理员，拥有图书管理权限', status: 1 },
-  { id: 3, roleName: '普通用户', roleCode: 'USER', description: '普通用户，只能查询和借阅图书', status: 1 }
-])
+const formRef = ref(null)
+const menuTreeRef = ref(null)
+
+const roleList = ref([])
+const menuTreeList = ref([])
+const checkedMenuIds = ref([])
+const dialogVisible = ref(false)
+const permissionDialogVisible = ref(false)
+const dialogTitle = ref('')
+const isEdit = ref(false)
+const currentRoleId = ref(null)
+
+const formData = reactive({
+  id: null,
+  roleName: '',
+  roleCode: '',
+  description: '',
+  status: 1
+})
+
+const formRules = {
+  roleName: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
+  roleCode: [{ required: true, message: '请输入角色编码', trigger: 'blur' }]
+}
+
+const loadData = async () => {
+  try {
+    const res = await getRoleList()
+    roleList.value = res.data || []
+  } catch (error) {
+    console.error('加载角色列表失败', error)
+  }
+}
+
+const loadMenuTree = async () => {
+  try {
+    const res = await getMenuTree()
+    menuTreeList.value = res.data || []
+  } catch (error) {
+    console.error('加载菜单树失败', error)
+  }
+}
 
 const handleAdd = () => {
-  ElMessage.info('新增角色功能开发中...')
+  isEdit.value = false
+  dialogTitle.value = '新增角色'
+  Object.assign(formData, {
+    id: null,
+    roleName: '',
+    roleCode: '',
+    description: '',
+    status: 1
+  })
+  dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
-  ElMessage.info(`编辑角色: ${row.roleName}`)
+  isEdit.value = true
+  dialogTitle.value = '编辑角色'
+  Object.assign(formData, row)
+  dialogVisible.value = true
 }
 
-const handlePermission = (row) => {
-  ElMessage.info(`配置角色权限: ${row.roleName}`)
+const handlePermission = async (row) => {
+  currentRoleId.value = row.id
+  permissionDialogVisible.value = true
+  
+  try {
+    await loadMenuTree()
+    const res = await getRoleMenus(row.id)
+    checkedMenuIds.value = res.data || []
+  } catch (error) {
+    console.error('加载角色权限失败', error)
+    ElMessage.error('加载角色权限失败')
+  }
 }
 
 const handleDelete = (row) => {
@@ -64,8 +181,71 @@ const handleDelete = (row) => {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(() => {
-    ElMessage.success('删除成功')
+  }).then(async () => {
+    try {
+      await deleteRole(row.id)
+      ElMessage.success('删除成功')
+      loadData()
+    } catch (error) {
+      console.error('删除失败', error)
+    }
   }).catch(() => {})
 }
+
+const handleSubmit = async () => {
+  try {
+    await formRef.value.validate()
+    if (isEdit.value) {
+      await updateRole(formData)
+      ElMessage.success('更新成功')
+    } else {
+      await addRole(formData)
+      ElMessage.success('添加成功')
+    }
+    dialogVisible.value = false
+    loadData()
+  } catch (error) {
+    console.error('提交失败', error)
+    if (error !== false) {
+      ElMessage.error(error.message || '操作失败')
+    }
+  }
+}
+
+const handleSavePermission = async () => {
+  try {
+    const checkedKeys = menuTreeRef.value.getCheckedKeys()
+    const halfCheckedKeys = menuTreeRef.value.getHalfCheckedKeys()
+    const allCheckedKeys = [...checkedKeys, ...halfCheckedKeys]
+    
+    await assignRoleMenus(currentRoleId.value, allCheckedKeys)
+    ElMessage.success('权限配置保存成功')
+    permissionDialogVisible.value = false
+  } catch (error) {
+    console.error('保存权限失败', error)
+    ElMessage.error('保存权限失败')
+  }
+}
+
+onMounted(() => {
+  loadData()
+})
 </script>
+
+<style scoped>
+.page-container {
+  padding: 20px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: bold;
+}
+</style>

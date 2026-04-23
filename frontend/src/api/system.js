@@ -110,3 +110,18 @@ export function deleteMenu(id) {
     method: 'delete'
   })
 }
+
+export function getRoleMenus(roleId) {
+  return request({
+    url: `/role-menu/${roleId}`,
+    method: 'get'
+  })
+}
+
+export function assignRoleMenus(roleId, menuIds) {
+  return request({
+    url: '/role-menu/assign',
+    method: 'post',
+    data: { roleId, menuIds }
+  })
+}
