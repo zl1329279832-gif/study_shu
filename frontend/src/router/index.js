@@ -1,6 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/store/user'
 
+const componentMap = {
+  'book/list/index': () => import('@/views/book/list/index.vue'),
+  'book/category/index': () => import('@/views/book/category/index.vue'),
+  'borrow/record/index': () => import('@/views/borrow/record/index.vue'),
+  'borrow/my/index': () => import('@/views/borrow/my/index.vue'),
+  'system/user/index': () => import('@/views/system/user/index.vue'),
+  'system/role/index': () => import('@/views/system/role/index.vue'),
+  'system/menu/index': () => import('@/views/system/menu/index.vue')
+}
+
 const routes = [
   {
     path: '/login',
@@ -26,6 +36,48 @@ const routes = [
         name: 'Profile',
         component: () => import('@/views/profile/index.vue'),
         meta: { title: '个人中心', icon: 'User' }
+      },
+      {
+        path: 'book/list',
+        name: 'BookList',
+        component: componentMap['book/list/index'],
+        meta: { title: '图书列表', icon: 'List' }
+      },
+      {
+        path: 'book/category',
+        name: 'BookCategory',
+        component: componentMap['book/category/index'],
+        meta: { title: '图书分类', icon: 'Folder' }
+      },
+      {
+        path: 'borrow/record',
+        name: 'BorrowRecord',
+        component: componentMap['borrow/record/index'],
+        meta: { title: '借阅记录', icon: 'Tickets' }
+      },
+      {
+        path: 'borrow/my',
+        name: 'MyBorrow',
+        component: componentMap['borrow/my/index'],
+        meta: { title: '我的借阅', icon: 'Document' }
+      },
+      {
+        path: 'system/user',
+        name: 'SystemUser',
+        component: componentMap['system/user/index'],
+        meta: { title: '用户管理', icon: 'User' }
+      },
+      {
+        path: 'system/role',
+        name: 'SystemRole',
+        component: componentMap['system/role/index'],
+        meta: { title: '角色管理', icon: 'UserFilled' }
+      },
+      {
+        path: 'system/menu',
+        name: 'SystemMenu',
+        component: componentMap['system/menu/index'],
+        meta: { title: '菜单管理', icon: 'Menu' }
       }
     ]
   }
@@ -59,12 +111,6 @@ router.beforeEach(async (to, from, next) => {
   if (!userStore.username) {
     try {
       await userStore.getUserInfoAction()
-      
-      const dynamicRoutes = generateDynamicRoutes(userStore.menus)
-      dynamicRoutes.forEach(route => {
-        router.addRoute('Layout', route)
-      })
-      
       next({ ...to, replace: true })
     } catch (error) {
       console.error('获取用户信息失败:', error)
@@ -76,35 +122,5 @@ router.beforeEach(async (to, from, next) => {
 
   next()
 })
-
-function generateDynamicRoutes(menus) {
-  const routes = []
-  
-  const flattenMenus = (menuList) => {
-    menuList.forEach(menu => {
-      if (menu.menuType === 1 && menu.path && menu.component) {
-        const routePath = menu.path.substring(1)
-        const route = {
-          path: routePath,
-          name: menu.path.replace(/\//g, '-').substring(1),
-          component: () => import(`@/views${menu.component}.vue`),
-          meta: {
-            title: menu.menuName,
-            icon: menu.icon
-          }
-        }
-        routes.push(route)
-      }
-      
-      if (menu.children && menu.children.length > 0) {
-        flattenMenus(menu.children)
-      }
-    })
-  }
-  
-  flattenMenus(menus)
-  
-  return routes
-}
 
 export default router

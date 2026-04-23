@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 28080
 
 spring:
   datasource:
@@ -30,7 +30,7 @@ jwt:
   secret: library-management-secret-key-2023-abcdefghijklmnopqrstuvwxyz
   expiration: 86400000
   header: Authorization
-  prefix: Bearer 
+  prefix: Bearer
 
 logging:
   level:

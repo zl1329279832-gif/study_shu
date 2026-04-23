@@ -27,7 +27,7 @@
       </el-form-item>
     </el-form>
     
-    <el-table :data="borrowList" stripe>
+    <el-table :data="filteredRecordList" stripe>
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="bookName" label="图书名称" />
       <el-table-column prop="author" label="作者" />
@@ -72,8 +72,10 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { Search, Refresh } from '@element-plus/icons-vue'
+import { getMyRecords, returnBook } from '@/api/borrow'
 
 const searchForm = reactive({
   bookName: '',
@@ -83,29 +85,21 @@ const searchForm = reactive({
 const pagination = reactive({
   pageNum: 1,
   pageSize: 10,
-  total: 2
+  total: 0
 })
 
-const borrowList = ref([
-  { 
-    id: 1, 
-    bookName: '红楼梦', 
-    author: '曹雪芹',
-    borrowTime: '2024-01-15 10:30:00', 
-    expectReturnTime: '2024-02-15 10:30:00',
-    actualReturnTime: null,
-    status: 1
-  },
-  { 
-    id: 2, 
-    bookName: '西游记', 
-    author: '吴承恩',
-    borrowTime: '2024-01-10 14:20:00', 
-    expectReturnTime: '2024-02-10 14:20:00',
-    actualReturnTime: '2024-02-08 09:15:00',
-    status: 2
+const borrowList = ref([])
+
+const filteredRecordList = computed(() => {
+  let result = borrowList.value
+  if (searchForm.bookName) {
+    result = result.filter(item => item.bookName?.includes(searchForm.bookName))
   }
-])
+  if (searchForm.status !== null && searchForm.status !== undefined) {
+    result = result.filter(item => item.status === searchForm.status)
+  }
+  return result
+})
 
 const getStatusType = (status) => {
   const map = {
@@ -125,14 +119,24 @@ const getStatusLabel = (status) => {
   return map[status] || '未知'
 }
 
+const loadData = async () => {
+  try {
+    const res = await getMyRecords()
+    borrowList.value = res.data || []
+    pagination.total = borrowList.value.length
+  } catch (error) {
+    console.error('加载我的借阅失败', error)
+  }
+}
+
 const handleSearch = () => {
-  ElMessage.info('搜索功能开发中...')
+  pagination.pageNum = 1
 }
 
 const handleReset = () => {
   searchForm.bookName = ''
   searchForm.status = null
-  ElMessage.success('已重置')
+  pagination.pageNum = 1
 }
 
 const handleReturn = (row) => {
@@ -140,8 +144,37 @@ const handleReturn = (row) => {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(() => {
-    ElMessage.success('归还成功')
+  }).then(async () => {
+    try {
+      await returnBook(row.id)
+      ElMessage.success('归还成功')
+      loadData()
+    } catch (error) {
+      console.error('归还失败', error)
+      ElMessage.error(error.message || '归还失败')
+    }
   }).catch(() => {})
 }
+
+onMounted(() => {
+  loadData()
+})
 </script>
+
+<style scoped>
+.page-container {
+  padding: 20px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: bold;
+}
+</style>

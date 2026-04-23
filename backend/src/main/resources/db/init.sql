@@ -106,6 +106,67 @@ INSERT INTO sys_user (username, password, real_name, phone, email, status) VALUE
 ('manager', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5E', '管理员', '13800138001', 'manager@library.com', 1),
 ('user', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5E', '普通用户', '13800138002', 'user@library.com', 1);
 
+-- 图书分类表
+CREATE TABLE IF NOT EXISTS book_category (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    category_name VARCHAR(50) NOT NULL COMMENT '分类名称',
+    category_code VARCHAR(50) NOT NULL UNIQUE COMMENT '分类编码',
+    description VARCHAR(255) COMMENT '分类描述',
+    sort_order INT DEFAULT 0 COMMENT '排序',
+    status TINYINT DEFAULT 1 COMMENT '状态 1:启用 0:禁用',
+    deleted TINYINT DEFAULT 0 COMMENT '逻辑删除 1:删除 0:未删除',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='图书分类表';
+
+-- 图书表
+CREATE TABLE IF NOT EXISTS book (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    book_name VARCHAR(100) NOT NULL COMMENT '图书名称',
+    author VARCHAR(100) COMMENT '作者',
+    isbn VARCHAR(20) COMMENT 'ISBN',
+    publisher VARCHAR(100) COMMENT '出版社',
+    category_id BIGINT COMMENT '分类ID',
+    stock INT DEFAULT 0 COMMENT '库存数量',
+    status TINYINT DEFAULT 1 COMMENT '状态 1:可借 0:不可借',
+    deleted TINYINT DEFAULT 0 COMMENT '逻辑删除 1:删除 0:未删除',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_book_name (book_name),
+    INDEX idx_category_id (category_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='图书表';
+
+-- 借阅记录表
+CREATE TABLE IF NOT EXISTS borrow_record (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    book_id BIGINT NOT NULL COMMENT '图书ID',
+    borrow_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '借阅时间',
+    expect_return_time DATETIME COMMENT '预计归还时间',
+    actual_return_time DATETIME COMMENT '实际归还时间',
+    status TINYINT DEFAULT 1 COMMENT '状态 1:借阅中 2:已归还 3:已逾期',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_user_id (user_id),
+    INDEX idx_book_id (book_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='借阅记录表';
+
+-- 插入图书分类数据
+INSERT INTO book_category (category_name, category_code, description, sort_order, status) VALUES 
+('文学小说', 'LITERATURE', '文学类小说作品', 1, 1),
+('科技教育', 'TECH', '科技、教育类书籍', 2, 1),
+('历史人文', 'HISTORY', '历史、人文类书籍', 3, 1),
+('经济管理', 'ECONOMY', '经济、管理类书籍', 4, 1);
+
+-- 插入图书数据
+INSERT INTO book (book_name, author, isbn, publisher, category_id, stock, status) VALUES 
+('红楼梦', '曹雪芹', '9787020002207', '人民文学出版社', 1, 50, 1),
+('西游记', '吴承恩', '9787020008735', '人民文学出版社', 1, 45, 1),
+('JavaScript高级程序设计', 'Zakas', '9787115545381', '人民邮电出版社', 2, 30, 1),
+('深入理解Java虚拟机', '周志明', '9787111547310', '机械工业出版社', 2, 20, 1),
+('明朝那些事儿', '当年明月', '9787505722460', '中国友谊出版公司', 3, 35, 1);
+
 -- 分配用户角色
 INSERT INTO sys_user_role (user_id, role_id) VALUES 
 (1, 1),
